@@ -22,22 +22,8 @@ router.get('/', (req, res) => {
 
 // /api/hubs/:id
 
-router.get('/:id', (req, res) => {
-  Hubs.findById(req.params.id)
-  .then(hub => {
-    if (hub) {
-      res.status(200).json(hub);
-    } else {
-      res.status(404).json({ message: 'Hub not found' });
-    }
-  })
-  .catch(error => {
-    // log error to server
-    console.log(error);
-    res.status(500).json({
-      message: 'Error retrieving the hub',
-    });
-  });
+router.get('/:id', validateId, (req, res) => {
+  res.status(200).json(req.hub)
 });
 
 router.post('/', (req, res) => {
@@ -54,14 +40,10 @@ router.post('/', (req, res) => {
   });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validateId, (req, res) => {
   Hubs.remove(req.params.id)
   .then(count => {
-    if (count > 0) {
       res.status(200).json({ message: 'The hub has been nuked' });
-    } else {
-      res.status(404).json({ message: 'The hub could not be found' });
-    }
   })
   .catch(error => {
     // log error to server
@@ -72,14 +54,10 @@ router.delete('/:id', (req, res) => {
   });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', validateId, (req, res) => {
   Hubs.update(req.params.id, req.body)
   .then(hub => {
-    if (hub) {
       res.status(200).json(hub);
-    } else {
-      res.status(404).json({ message: 'The hub could not be found' });
-    }
   })
   .catch(error => {
     // log error to server
@@ -122,5 +100,27 @@ router.post('/:id/messages', (req, res) => {
     });
   });
 });
+
+function validateId(req, res, next) {
+  const { id } = req.params;
+
+  Hubs.findById(id)
+  .then(hub => {
+    if (hub) {
+      req.hub = hub
+      next();
+    } else {
+      res.status(404).json({
+        message: 'No hub with given id'
+      })
+    }
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json({
+      message: 'Error processing the request'
+    });
+  }) ;
+}
 
 module.exports = router;
